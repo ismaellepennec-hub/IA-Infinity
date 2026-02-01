@@ -1,0 +1,429 @@
+// Schéma Prisma pour le CRM IA Infinity
+// Gestion de Projets Clients et Sous-traitants
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// UTILISATEURS ET AUTHENTIFICATION
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(USER)
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  projects        Project[]      @relation("ProjectManager")
+  tasks           Task[]         @relation("TaskAssignee")
+  comments        Comment[]
+  notifications   Notification[]
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+}
+
+// ============================================
+// CLIENTS
+// ============================================
+
+model Client {
+  id            String   @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  company       String?
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String?  @default("France")
+  website       String?
+  notes         String?
+  status        ClientStatus @default(ACTIVE)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  projects      Project[]
+  contacts      ClientContact[]
+}
+
+model ClientContact {
+  id          String   @id @default(uuid())
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  jobTitle    String?
+  isPrimary   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+// ============================================
+// SOUS-TRAITANTS
+// ============================================
+
+model Contractor {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String   @unique
+  phone         String?
+  company       String?
+  siret         String?
+
+  // Compétences et spécialités
+  skills        String?  // JSON array ou texte séparé par virgules
+  specialty     String?
+  hourlyRate    Float?
+  dailyRate     Float?
+
+  // Statut
+  status        ContractorStatus @default(ACTIVE)
+
+  // Adresse
+  address       String?
+  city          String?
+  postalCode    String?
+
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  availabilities Availability[]
+  assignments    ProjectAssignment[]
+  tasks          Task[]
+}
+
+enum ContractorStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+// ============================================
+// DISPONIBILITÉS DES SOUS-TRAITANTS
+// ============================================
+
+model Availability {
+  id           String   @id @default(uuid())
+  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  contractorId String
+
+  startDate    DateTime
+  endDate      DateTime
+  type         AvailabilityType
+  notes        String?
+
+  createdAt    DateTime @default(now())
+}
+
+enum AvailabilityType {
+  AVAILABLE     // Disponible
+  UNAVAILABLE   // Indisponible
+  PARTIAL       // Partiellement disponible
+  HOLIDAY       // Congés
+}
+
+// ============================================
+// PROJETS
+// ============================================
+
+model Project {
+  id            String   @id @default(uuid())
+  reference     String   @unique
+  name          String
+  description   String?
+
+  // Client
+  client        Client   @relation(fields: [clientId], references: [id])
+  clientId      String
+
+  // Chef de projet
+  manager       User?    @relation("ProjectManager", fields: [managerId], references: [id])
+  managerId     String?
+
+  // Dates
+  startDate     DateTime?
+  endDate       DateTime?
+  deadline      DateTime?
+
+  // Budget
+  budget        Float?
+  estimatedHours Float?
+
+  // Statut et priorité
+  status        ProjectStatus @default(DRAFT)
+  priority      Priority      @default(MEDIUM)
+
+  // Progression
+  progress      Int      @default(0)  // 0-100
+
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  milestones    Milestone[]
+  tasks         Task[]
+  assignments   ProjectAssignment[]
+  documents     Document[]
+  comments      Comment[]
+  timeEntries   TimeEntry[]
+}
+
+enum ProjectStatus {
+  DRAFT         // Brouillon
+  PENDING       // En attente
+  IN_PROGRESS   // En cours
+  ON_HOLD       // En pause
+  COMPLETED     // Terminé
+  CANCELLED     // Annulé
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ============================================
+// AFFECTATION SOUS-TRAITANTS AUX PROJETS
+// ============================================
+
+model ProjectAssignment {
+  id           String   @id @default(uuid())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  contractor   Contractor @relation(fields: [contractorId], references: [id])
+  contractorId String
+
+  role         String?  // Rôle sur le projet
+  startDate    DateTime?
+  endDate      DateTime?
+  hoursAllocated Float?
+  hourlyRate   Float?   // Taux spécifique au projet
+
+  createdAt    DateTime @default(now())
+
+  @@unique([projectId, contractorId])
+}
+
+// ============================================
+// JALONS (MILESTONES) - ROADMAP
+// ============================================
+
+model Milestone {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+
+  name        String
+  description String?
+  dueDate     DateTime
+  status      MilestoneStatus @default(PENDING)
+
+  position    Int      @default(0)  // Pour l'ordre dans la roadmap
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tasks       Task[]
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+// ============================================
+// TÂCHES
+// ============================================
+
+model Task {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+
+  // Jalon optionnel
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
+  milestoneId String?
+
+  title       String
+  description String?
+
+  // Assignation
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigneeId  String?
+  contractor  Contractor? @relation(fields: [contractorId], references: [id])
+  contractorId String?
+
+  // Dates
+  startDate   DateTime?
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  // Statut et priorité
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+
+  // Estimation
+  estimatedHours Float?
+  actualHours    Float?
+
+  position    Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  comments    Comment[]
+  timeEntries TimeEntry[]
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// SUIVI DU TEMPS
+// ============================================
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  task        Task?    @relation(fields: [taskId], references: [id])
+  taskId      String?
+
+  date        DateTime
+  hours       Float
+  description String?
+
+  createdAt   DateTime @default(now())
+}
+
+// ============================================
+// COMMENTAIRES
+// ============================================
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+
+  // Peut être sur un projet ou une tâche
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String?
+
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// DOCUMENTS
+// ============================================
+
+model Document {
+  id        String   @id @default(uuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  name      String
+  type      String   // Type MIME
+  size      Int      // Taille en octets
+  url       String   // Chemin ou URL du fichier
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  type      String   // Type de notification
+  title     String
+  message   String
+  link      String?  // Lien vers la ressource concernée
+
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// ÉVÉNEMENTS AGENDA
+// ============================================
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+
+  startDate   DateTime
+  endDate     DateTime
+  allDay      Boolean  @default(false)
+
+  type        EventType @default(MEETING)
+  color       String?
+
+  // Références optionnelles
+  projectRef  String?  // ID du projet lié
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum EventType {
+  MEETING       // Réunion
+  DEADLINE      // Échéance
+  MILESTONE     // Jalon
+  REMINDER      // Rappel
+  OTHER
+}
