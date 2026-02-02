@@ -207,7 +207,19 @@ interface ClientModalProps {
 }
 
 function ClientModal({ client, onClose, onSave }: ClientModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    website: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    siret: string;
+    status: string;
+    notes: string;
+  }>({
     name: client?.name || '',
     email: client?.email || '',
     phone: client?.phone || '',

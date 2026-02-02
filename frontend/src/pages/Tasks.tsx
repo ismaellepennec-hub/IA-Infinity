@@ -7,7 +7,6 @@ import {
   TrashIcon,
   CheckCircleIcon,
   ClockIcon,
-  FunnelIcon,
 } from '@heroicons/react/24/outline';
 import api, { Task, Project, Contractor, PaginatedResponse } from '../lib/api';
 import toast from 'react-hot-toast';

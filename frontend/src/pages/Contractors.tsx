@@ -388,7 +388,7 @@ function ContractorModal({ contractor, onClose, onSave }: any) {
   );
 }
 
-function AvailabilityModal({ contractor, onClose, onSave }: any) {
+function AvailabilityModal({ contractor, onClose }: any) {
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({

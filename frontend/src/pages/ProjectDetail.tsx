@@ -7,10 +7,9 @@ import {
   TrashIcon,
   CheckCircleIcon,
   ClockIcon,
-  UserGroupIcon,
   FlagIcon,
 } from '@heroicons/react/24/outline';
-import api, { Project, Task, Milestone, Contractor } from '../lib/api';
+import api, { Project, Task, Contractor } from '../lib/api';
 import toast from 'react-hot-toast';
 
 export default function ProjectDetail() {
@@ -266,7 +265,7 @@ export default function ProjectDetail() {
           {project.milestones && project.milestones.length > 0 ? (
             <div className="relative pl-8">
               <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-dark-600"></div>
-              {project.milestones.map((milestone, index) => (
+              {project.milestones.map((milestone) => (
                 <div key={milestone.id} className="relative mb-6 last:mb-0">
                   <div className={`absolute -left-5 w-4 h-4 rounded-full border-2 ${
                     milestone.status === 'COMPLETED' ? 'bg-emerald-500 border-emerald-500' :

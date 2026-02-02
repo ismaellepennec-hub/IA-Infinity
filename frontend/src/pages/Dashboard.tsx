@@ -5,10 +5,8 @@ import {
   UsersIcon,
   UserGroupIcon,
   ClipboardDocumentListIcon,
-  ArrowTrendingUpIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   BarChart,
@@ -23,13 +21,6 @@ import {
   Cell,
 } from 'recharts';
 import api, { DashboardData, Project, Task } from '../lib/api';
-
-const PRIORITY_COLORS = {
-  LOW: '#64748b',
-  MEDIUM: '#3b82f6',
-  HIGH: '#f59e0b',
-  URGENT: '#ef4444',
-};
 
 const STATUS_COLORS = {
   DRAFT: '#64748b',

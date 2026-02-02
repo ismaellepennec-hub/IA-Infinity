@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
@@ -279,7 +278,17 @@ interface ProjectModalProps {
 }
 
 function ProjectModal({ project, clients, onClose, onSave }: ProjectModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    clientId: string;
+    status: string;
+    priority: string;
+    startDate: string;
+    endDate: string;
+    budget: string;
+    estimatedHours: string;
+  }>({
     name: project?.name || '',
     description: project?.description || '',
     clientId: project?.clientId || '',
